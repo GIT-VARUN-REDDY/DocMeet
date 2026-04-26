@@ -12,8 +12,7 @@ app.use(helmet());
 
 // ✅ CORS — only allow frontend origin
 app.use(cors({
-  origin: "http://localhost:3000",
-  credentials: true,
+  origin: "*"
 }));
 
 app.use(express.json({ limit: "10kb" })); // prevent large payload attacks
