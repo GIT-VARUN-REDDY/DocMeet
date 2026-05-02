@@ -1,11 +1,14 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
+
 import Login from "./pages/Login";
 import RegisterUser from "./pages/RegisterUser";
 import RegisterDoctor from "./pages/RegisterDoctor";
 import VerifyOtp from "./pages/VerifyOtp";
+import Home from "./pages/Home";
 import Doctors from "./pages/Doctors";
+import Symptoms from "./pages/Symptoms";
 import Book from "./pages/Book";
 import MyAppointments from "./pages/MyAppointments";
 import DoctorDashboard from "./pages/DoctorDashboard";
@@ -16,11 +19,13 @@ function App() {
       <Navbar />
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Doctors />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<RegisterUser />} />
+        <Route path="/"               element={<Home />} />
+        <Route path="/doctors"        element={<Doctors />} />
+        <Route path="/symptoms"       element={<Symptoms />} />
+        <Route path="/login"          element={<Login />} />
+        <Route path="/register"       element={<RegisterUser />} />
         <Route path="/register/doctor" element={<RegisterDoctor />} />
-        <Route path="/verify-otp" element={<VerifyOtp />} />
+        <Route path="/verify-otp"     element={<VerifyOtp />} />
 
         {/* Patient-only routes */}
         <Route path="/book/:id" element={

@@ -57,7 +57,7 @@ function Book() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-8">
       <div className="max-w-xl mx-auto">
         <button
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/doctors")}
           className="text-blue-600 hover:underline text-sm mb-6 flex items-center gap-1"
         >
           ← Back to Doctors

@@ -62,7 +62,7 @@ function MyAppointments() {
             <p className="text-lg font-semibold">No appointments yet</p>
             <p className="text-sm mb-6">Book your first appointment with a doctor</p>
             <button
-              onClick={() => navigate("/")}
+              onClick={() =>navigate("/doctors")}
               className="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
             >
               Browse Doctors

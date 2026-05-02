@@ -8,15 +8,19 @@ const userSchema = new mongoose.Schema(
     password: { type: String, required: true, minlength: 6 },
     role:     { type: String, enum: ["user", "doctor"], default: "user" },
 
-    // ✅ Email verification
-    isVerified:       { type: Boolean, default: false },
-    otp:              { type: String },
-    otpExpiry:        { type: Date },
+    // Email verification
+    isVerified: { type: Boolean, default: false },
+    otp:        { type: String },
+    otpExpiry:  { type: Date },
 
     // Doctor-only fields
     specialization: { type: String },
     experience:     { type: Number, min: 0, max: 60 },
     fees:           { type: Number, min: 0 },
+    hospital:       { type: String },   // ✅ hospital they work in
+    city:           { type: String },   // ✅ city/location
+    phone:          { type: String },   // ✅ contact number
+    about:          { type: String },   // ✅ short bio
     available:      { type: Boolean, default: true },
     slots: {
       type: [String],
@@ -26,18 +30,15 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Hash password before saving
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
   this.password = await bcrypt.hash(this.password, 12);
 });
 
-// Compare password
 userSchema.methods.matchPassword = async function (entered) {
   return await bcrypt.compare(entered, this.password);
 };
 
-// Check if OTP is valid and not expired
 userSchema.methods.isOtpValid = function (enteredOtp) {
   return this.otp === enteredOtp && this.otpExpiry > Date.now();
 };
