@@ -17,55 +17,55 @@ function Navbar() {
 
   return (
     <nav className={`sticky top-0 z-50 flex justify-between items-center px-8 py-4 text-white shadow-lg ${isDoctor ? "bg-teal-600" : "bg-blue-600"}`}>
-      
-      <Link to={isDoctor ? "/dashboard" : "/"} className="text-2xl font-bold">
+      <Link to={isDoctor ? "/dashboard" : "/"} className="text-2xl font-bold tracking-tight hover:opacity-90 transition">
         🩺 DocMeet
       </Link>
 
       <div className="flex items-center gap-6 text-sm font-medium">
-
-        {/* PUBLIC / PATIENT NAV */}
+        {/* Patient nav */}
         {!isDoctor && (
           <>
-           <Link to="/" className={`hover:underline ${isActive("/") ? "underline" : ""}`}>Home</Link>
-
-          <Link to="/doctors" className={`hover:underline ${isActive("/doctors") ? "underline" : ""}`}>Doctors</Link>
-
-          <Link to="/symptoms" className={`hover:underline ${isActive("/symptoms") ? "underline" : ""}`}>Symptoms</Link>
+            <Link to="/" className={`hover:underline underline-offset-4 ${isActive("/") ? "underline" : ""}`}>Home</Link>
+            <Link to="/doctors" className={`hover:underline underline-offset-4 ${isActive("/doctors") ? "underline" : ""}`}>Doctors</Link>
+            <Link to="/symptoms" className={`hover:underline underline-offset-4 ${isActive("/symptoms") ? "underline" : ""}`}>Symptoms</Link>
           </>
         )}
 
-        {/* PATIENT */}
         {token && !isDoctor && (
-          <Link to="/my" className={isActive("/my") ? "underline" : ""}>
+          <Link to="/my" className={`hover:underline underline-offset-4 ${isActive("/my") ? "underline" : ""}`}>
             My Appointments
           </Link>
         )}
 
-        {/* DOCTOR */}
+        {/* Doctor nav */}
         {token && isDoctor && (
-          <Link to="/dashboard" className={isActive("/dashboard") ? "underline" : ""}>
-            Dashboard
-          </Link>
+          <>
+            <Link to="/dashboard" className={`hover:underline underline-offset-4 ${isActive("/dashboard") ? "underline" : ""}`}>
+              Dashboard
+            </Link>
+            <Link to="/profile" className={`hover:underline underline-offset-4 ${isActive("/profile") ? "underline" : ""}`}>
+              My Profile
+            </Link>
+          </>
         )}
 
-        {/* AUTH */}
         {!token ? (
           <>
-            <Link to="/login">Login</Link>
-            <Link to="/register" className="bg-white text-blue-600 px-3 py-1 rounded">
+            <Link to="/login" className="hover:underline underline-offset-4">Login</Link>
+            <Link to="/register" className="bg-white text-blue-600 font-semibold px-4 py-1.5 rounded-full hover:bg-blue-50 transition">
               Register
             </Link>
           </>
         ) : (
-          <>
-            <span>Hi, {user.name?.split(" ")[0]}</span>
-            <button onClick={logout} className="bg-red-500 px-3 py-1 rounded">
+          <div className="flex items-center gap-3">
+            <span className={`text-sm ${isDoctor ? "text-teal-100" : "text-blue-100"}`}>
+              Hi, {user.name?.split(" ")[0]}
+            </span>
+            <button onClick={logout} className="bg-red-500 hover:bg-red-600 px-4 py-1.5 rounded-full text-sm font-semibold transition">
               Logout
             </button>
-          </>
+          </div>
         )}
-
       </div>
     </nav>
   );

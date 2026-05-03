@@ -13,18 +13,29 @@ const userSchema = new mongoose.Schema(
     otp:        { type: String },
     otpExpiry:  { type: Date },
 
-    // Doctor-only fields
+    // Doctor fields
     specialization: { type: String },
     experience:     { type: Number, min: 0, max: 60 },
     fees:           { type: Number, min: 0 },
-    hospital:       { type: String },   // ✅ hospital they work in
-    city:           { type: String },   // ✅ city/location
-    phone:          { type: String },   // ✅ contact number
-    about:          { type: String },   // ✅ short bio
+    hospital:       { type: String },
+    city:           { type: String },
+    phone:          { type: String },
+    about:          { type: String },
     available:      { type: Boolean, default: true },
     slots: {
       type: [String],
       default: ["09:00 AM","10:00 AM","11:00 AM","12:00 PM","02:00 PM","03:00 PM","04:00 PM","05:00 PM"],
+    },
+
+    // Photos (stored as base64)
+    profilePhoto:  { type: String },
+    hospitalPhoto: { type: String },
+
+    // Exact location for map navigation
+    location: {
+      lat:     { type: Number },
+      lng:     { type: Number },
+      address: { type: String },
     },
   },
   { timestamps: true }

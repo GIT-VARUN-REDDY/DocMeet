@@ -3,60 +3,61 @@ import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
 
 const SPECIALIZATIONS = [
-  "All", "Cardiologist", "Dermatologist", "Neurologist",
-  "Orthopedic", "Pediatrician", "General Physician", "Gynecologist",
-  "Psychiatrist", "ENT Specialist", "Ophthalmologist",
+  "All","Cardiologist","Dermatologist","Neurologist","Orthopedic",
+  "Pediatrician","General Physician","Gynecologist","Psychiatrist",
+  "ENT Specialist","Ophthalmologist",
 ];
 
 function Doctors() {
   const [doctors, setDoctors] = useState([]);
-  const [filteredDoctors, setFilteredDoctors] = useState([]);
+  const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load doctors & read query params from Home page
   useEffect(() => {
     const query = new URLSearchParams(location.search);
-    const searchQuery = query.get("search") || "";
-    const specialtyQuery = query.get("specialty") || "All";
-    setSearch(searchQuery);
-    setFilter(specialtyQuery);
-
+    setSearch(query.get("search") || "");
+    setFilter(query.get("specialty") || "All");
     API.get("/doctor/all")
       .then((res) => setDoctors(res.data))
-      .catch(() => alert("Failed to load doctors. Is the backend running?"))
+      .catch(() => alert("Failed to load doctors"))
       .finally(() => setLoading(false));
   }, [location.search]);
 
-  // Apply filters
   useEffect(() => {
     let data = [...doctors];
-
     if (search) {
       const q = search.toLowerCase();
-      data = data.filter((doc) =>
-        doc.name?.toLowerCase().includes(q) ||
-        doc.specialization?.toLowerCase().includes(q) ||
-        doc.hospital?.toLowerCase().includes(q) ||
-        doc.city?.toLowerCase().includes(q)
+      data = data.filter((d) =>
+        d.name?.toLowerCase().includes(q) ||
+        d.specialization?.toLowerCase().includes(q) ||
+        d.hospital?.toLowerCase().includes(q) ||
+        d.city?.toLowerCase().includes(q)
       );
     }
-
-    if (filter !== "All") {
-      data = data.filter((doc) => doc.specialization === filter);
-    }
-
-    setFilteredDoctors(data);
+    if (filter !== "All") data = data.filter((d) => d.specialization === filter);
+    setFiltered(data);
   }, [search, filter, doctors]);
+
+  const openMaps = (e, doc) => {
+    e.stopPropagation();
+    if (doc.location?.lat && doc.location?.lng) {
+      window.open(`https://www.google.com/maps?q=${doc.location.lat},${doc.location.lng}`, "_blank");
+    } else if (doc.location?.address) {
+      window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.location.address)}`, "_blank");
+    } else if (doc.hospital) {
+      window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.hospital + " " + (doc.city || ""))}`, "_blank");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-8">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-bold text-blue-700 mb-2">Find Your Doctor</h2>
-        <p className="text-gray-500">Browse by name, specialty, hospital, or city</p>
+        <p className="text-gray-500">Search by name, specialty, hospital, or city</p>
       </div>
 
       {/* Search */}
@@ -70,32 +71,24 @@ function Doctors() {
         />
       </div>
 
-      {/* Specialty Filter Pills */}
+      {/* Filter pills */}
       <div className="flex flex-wrap gap-2 justify-center mb-8">
         {SPECIALIZATIONS.map((s) => (
-          <button
-            key={s}
-            onClick={() => setFilter(s)}
+          <button key={s} onClick={() => setFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
-              filter === s
-                ? "bg-blue-600 text-white shadow"
-                : "bg-white text-blue-600 border border-blue-200 hover:bg-blue-50"
+              filter === s ? "bg-blue-600 text-white shadow" : "bg-white text-blue-600 border border-blue-200 hover:bg-blue-50"
             }`}
-          >
-            {s}
-          </button>
+          >{s}</button>
         ))}
       </div>
 
-      {/* Loading */}
       {loading && (
-        <div className="flex justify-center items-center h-40">
+        <div className="flex justify-center h-40 items-center">
           <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-blue-500"></div>
         </div>
       )}
 
-      {/* Empty */}
-      {!loading && filteredDoctors.length === 0 && (
+      {!loading && filtered.length === 0 && (
         <div className="text-center text-gray-400 mt-16">
           <p className="text-5xl mb-4">🩺</p>
           <p className="text-lg font-semibold">No doctors found</p>
@@ -103,25 +96,66 @@ function Doctors() {
         </div>
       )}
 
-      {/* Doctor Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {filteredDoctors.map((doc) => (
+        {filtered.map((doc) => (
           <div key={doc._id} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
-            {/* Top banner */}
-            <div className="bg-gradient-to-r from-blue-500 to-blue-400 h-24 flex items-center justify-center relative">
-              <div className="w-16 h-16 rounded-full bg-white flex items-center justify-center shadow-lg text-2xl font-bold text-blue-600">
-                {doc.name?.charAt(0).toUpperCase() || "D"}
+
+            {/* ── PHOTO BANNER: 35% profile | 65% hospital ── */}
+            <div className="h-36 flex">
+              {/* Profile photo — 35% */}
+              <div className="w-[35%] relative overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shrink-0">
+                {doc.profilePhoto ? (
+                  <img
+                    src={doc.profilePhoto}
+                    alt={`Dr. ${doc.name}`}
+                    className="w-full h-full object-cover object-top"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-white">
+                    <span className="text-4xl font-bold">{doc.name?.charAt(0).toUpperCase()}</span>
+                    <span className="text-xs mt-1 opacity-70">No photo</span>
+                  </div>
+                )}
+                {/* Label */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5 font-medium">
+                  Doctor
+                </div>
               </div>
-              {doc.available && (
-                <span className="absolute top-3 right-3 bg-green-400 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
-                  Available
-                </span>
-              )}
+
+              {/* Divider */}
+              <div className="w-px bg-white/50 shrink-0" />
+
+              {/* Hospital photo — 65% */}
+              <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
+                {doc.hospitalPhoto ? (
+                  <img
+                    src={doc.hospitalPhoto}
+                    alt="Hospital"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-400">
+                    <span className="text-4xl">🏥</span>
+                    <span className="text-xs mt-1">No hospital photo</span>
+                  </div>
+                )}
+                {/* Label */}
+                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5 font-medium">
+                  Hospital
+                </div>
+                {/* Available badge */}
+                {doc.available && (
+                  <span className="absolute top-2 right-2 bg-green-400 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold shadow">
+                    ● Available
+                  </span>
+                )}
+              </div>
             </div>
 
+            {/* ── CARD BODY ── */}
             <div className="p-5">
               <h3 className="text-lg font-bold text-gray-800">Dr. {doc.name}</h3>
-              <span className="inline-block mt-1 mb-2 text-xs font-semibold bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
+              <span className="inline-block mt-1 mb-3 text-xs font-semibold bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
                 {doc.specialization || "General Physician"}
               </span>
 
@@ -130,15 +164,33 @@ function Doctors() {
                 {doc.city && <p>📍 {doc.city}</p>}
                 {doc.experience !== undefined && <p>🕐 {doc.experience} yrs experience</p>}
                 {doc.fees !== undefined && <p>💰 ₹{doc.fees} consultation</p>}
-                {doc.phone && <p>📞 {doc.phone}</p>}
               </div>
 
-              <button
-                onClick={() => navigate(`/book/${doc._id}`)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl transition"
-              >
-                Book Appointment
-              </button>
+              {/* ── BUTTONS ── */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => navigate(`/book/${doc._id}`)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl transition text-sm"
+                >
+                  Book Appointment
+                </button>
+                <button
+                  onClick={() => navigate(`/doctor/${doc._id}`)}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2 rounded-xl transition text-sm"
+                  title="View full profile"
+                >
+                  👁
+                </button>
+                {(doc.location?.lat || doc.hospital) && (
+                  <button
+                    onClick={(e) => openMaps(e, doc)}
+                    title="Navigate to hospital"
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-xl transition"
+                  >
+                    🗺️
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         ))}

@@ -8,42 +8,42 @@ import RegisterDoctor from "./pages/RegisterDoctor";
 import VerifyOtp from "./pages/VerifyOtp";
 import Home from "./pages/Home";
 import Doctors from "./pages/Doctors";
+import DoctorDetail from "./pages/DoctorDetail";
 import Symptoms from "./pages/Symptoms";
 import Book from "./pages/Book";
 import MyAppointments from "./pages/MyAppointments";
 import DoctorDashboard from "./pages/DoctorDashboard";
+import DoctorProfile from "./pages/DoctorProfile";
 
 function App() {
   return (
     <BrowserRouter>
       <Navbar />
       <Routes>
-        {/* Public routes */}
-        <Route path="/"               element={<Home />} />
-        <Route path="/doctors"        element={<Doctors />} />
-        <Route path="/symptoms"       element={<Symptoms />} />
-        <Route path="/login"          element={<Login />} />
-        <Route path="/register"       element={<RegisterUser />} />
+        {/* Public */}
+        <Route path="/"                element={<Home />} />
+        <Route path="/doctors"         element={<Doctors />} />
+        <Route path="/doctor/:id"      element={<DoctorDetail />} />
+        <Route path="/symptoms"        element={<Symptoms />} />
+        <Route path="/login"           element={<Login />} />
+        <Route path="/register"        element={<RegisterUser />} />
         <Route path="/register/doctor" element={<RegisterDoctor />} />
-        <Route path="/verify-otp"     element={<VerifyOtp />} />
+        <Route path="/verify-otp"      element={<VerifyOtp />} />
 
-        {/* Patient-only routes */}
+        {/* Patient only */}
         <Route path="/book/:id" element={
-          <ProtectedRoute allowedRole="user">
-            <Book />
-          </ProtectedRoute>
+          <ProtectedRoute allowedRole="user"><Book /></ProtectedRoute>
         } />
         <Route path="/my" element={
-          <ProtectedRoute allowedRole="user">
-            <MyAppointments />
-          </ProtectedRoute>
+          <ProtectedRoute allowedRole="user"><MyAppointments /></ProtectedRoute>
         } />
 
-        {/* Doctor-only routes */}
+        {/* Doctor only */}
         <Route path="/dashboard" element={
-          <ProtectedRoute allowedRole="doctor">
-            <DoctorDashboard />
-          </ProtectedRoute>
+          <ProtectedRoute allowedRole="doctor"><DoctorDashboard /></ProtectedRoute>
+        } />
+        <Route path="/profile" element={
+          <ProtectedRoute allowedRole="doctor"><DoctorProfile /></ProtectedRoute>
         } />
 
         {/* 404 */}

@@ -1,7 +1,11 @@
 import axios from "axios";
 
+// ✅ Use local backend for development
+// Change to your Render URL only after pushing all latest code to GitHub
+const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:5000/api";
+
 const API = axios.create({
-  baseURL: "https://docmeet-2.onrender.com/api",
+  baseURL: BASE_URL,
 });
 
 // Attach token to every request
