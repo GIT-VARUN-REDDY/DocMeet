@@ -2,17 +2,16 @@ const express = require("express");
 const router = express.Router();
 const Appointment = require("../models/Appointment");
 const User = require("../models/User");
-const { protect, authorize } = require("../middleware/authMiddleware"); // ✅ destructured
+const { protect, authorize } = require("../middleware/authMiddleware");
 const { sendBookingConfirmation } = require("../utils/emailService");
 
 // GET available slots
 router.get("/available", async (req, res) => {
   try {
     const { doctorId, date } = req.query;
-    if (!doctorId || !date)
-      return res.status(400).json({ message: "doctorId and date are required" });
+    if (!doctorId || !date) return res.status(400).json({ message: "doctorId and date required" });
 
-    const doctor = await User.findOne({ _id: doctorId, role: "doctor" });
+    const doctor = await User.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
     const booked = await Appointment.find({ doctor: doctorId, date, status: "Confirmed" });
@@ -25,40 +24,37 @@ router.get("/available", async (req, res) => {
   }
 });
 
-// POST book appointment — patients only
+// POST book appointment
 router.post("/book", protect, authorize("user"), async (req, res) => {
   try {
     const { doctorId, date, time, symptoms } = req.body;
-    if (!doctorId || !date || !time)
-      return res.status(400).json({ message: "doctorId, date, and time are required" });
+    if (!doctorId || !date || !time) return res.status(400).json({ message: "doctorId, date, time required" });
 
-    const doctor = await User.findOne({ _id: doctorId, role: "doctor" });
+    const doctor = await User.findById(doctorId);
     if (!doctor) return res.status(404).json({ message: "Doctor not found" });
 
     const existing = await Appointment.findOne({ doctor: doctorId, date, time, status: "Confirmed" });
-    if (existing)
-      return res.status(409).json({ message: "This slot is already booked. Please choose another." });
+    if (existing) return res.status(409).json({ message: "Slot already booked. Choose another." });
 
     const appointment = await Appointment.create({
-      user: req.user._id,
-      doctor: doctorId,
-      date,
-      time,
-      symptoms: symptoms || "General checkup",
-      status: "Confirmed",
+      user: req.user._id, doctor: doctorId, date, time,
+      symptoms: symptoms || "General checkup", status: "Confirmed",
     });
 
-    // Send confirmation email (non-blocking)
-    sendBookingConfirmation(req.user.email, req.user.name, doctor.name, date, time)
-      .catch((e) => console.error("Email failed (non-critical):", e.message));
-
     res.status(201).json({ message: "Appointment confirmed!", appointment });
+
+    // Send confirmation email in background
+    setImmediate(() => {
+      sendBookingConfirmation(req.user.email, req.user.name, doctor.name, date, time)
+        .catch((e) => console.error("Booking email failed:", e.message));
+    });
+
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// GET my appointments — patients only
+// GET my appointments (patient)
 router.get("/my", protect, authorize("user"), async (req, res) => {
   try {
     const appointments = await Appointment.find({ user: req.user._id })
@@ -70,7 +66,7 @@ router.get("/my", protect, authorize("user"), async (req, res) => {
   }
 });
 
-// GET doctor bookings — doctors only
+// GET doctor bookings
 router.get("/doctor-bookings", protect, authorize("doctor"), async (req, res) => {
   try {
     const appointments = await Appointment.find({ doctor: req.user._id })
@@ -82,14 +78,13 @@ router.get("/doctor-bookings", protect, authorize("doctor"), async (req, res) =>
   }
 });
 
-// DELETE cancel — patients only
+// DELETE cancel appointment
 router.delete("/:id", protect, authorize("user"), async (req, res) => {
   try {
     const appointment = await Appointment.findOne({ _id: req.params.id, user: req.user._id });
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
-
     await Appointment.deleteOne({ _id: req.params.id });
-    res.json({ message: "Appointment cancelled. The slot is now available for others." });
+    res.json({ message: "Appointment cancelled." });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
