@@ -6,7 +6,15 @@ require("dotenv").config();
 const app = express();
 
 // ✅ CORS
-app.use(cors({ origin: "*" }));
+const cors = require("cors");
+
+app.use(cors({
+  origin: [
+    "http://localhost:3000",
+    "https://doc-meet-red.vercel.app"
+  ],
+  credentials: true
+}));
 
 // ✅ Increase payload limit for images
 app.use(express.json({ limit: "10mb" }));
