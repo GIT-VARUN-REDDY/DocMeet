@@ -1,17 +1,17 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sendOtpEmail, sendBookingConfirmation } = require("../utils/emailService");
+const { sendOtpEmail } = require("../utils/emailService");
 
-// 🔐 Generate JWT
+// 🔐 TOKEN
 const generateToken = (id) =>
   jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
-// 🔢 Generate OTP
+// 🔢 OTP
 const generateOtp = () =>
   crypto.randomInt(100000, 999999).toString();
 
-// 🔥 SAFE background email sender (IMPORTANT FIX)
+// 🔥 SAFE EMAIL (NO CRASH EVER)
 const emailBackground = (email, otp, name) => {
   setImmediate(async () => {
     try {
@@ -19,112 +19,59 @@ const emailBackground = (email, otp, name) => {
       console.log(`✅ OTP sent to ${email}`);
     } catch (e) {
       console.error(`❌ Email failed for ${email}:`, e.message);
-      // ❗ DO NOT throw → prevents API crash
     }
   });
 };
 
-// ==============================
-// 🟢 REGISTER
-// ==============================
+// ================= REGISTER =================
 const register = async (req, res) => {
   try {
-    const {
-      name,
-      email,
-      password,
-      role,
-      specialization,
-      experience,
-      fees,
-      hospital,
-      city,
-      phone,
-      about,
-    } = req.body;
-
+    const { name, email, password } = req.body;
     const emailLower = email.toLowerCase().trim();
 
     const exists = await User.findOne({ email: emailLower });
 
-    // 🔁 If already exists but not verified
     if (exists) {
       if (!exists.isVerified) {
         const otp = generateOtp();
         exists.otp = otp;
-        exists.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
+        exists.otpExpiry = Date.now() + 10 * 60 * 1000;
         await exists.save();
 
-        res.status(200).json({
-          message: "OTP resent to your email.",
+        res.json({
+          message: "OTP resent",
           requiresVerification: true,
-          email: emailLower,
         });
 
         emailBackground(emailLower, otp, exists.name);
         return;
       }
 
-      return res
-        .status(400)
-        .json({ message: "Email already registered. Please login." });
+      return res.status(400).json({ message: "Already registered" });
     }
 
-    // 🆕 New user
     const otp = generateOtp();
 
-    const userData = {
+    await User.create({
       name,
       email: emailLower,
       password,
-      role: role || "user",
       otp,
-      otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
-      isVerified: false,
-    };
-
-    // 👨‍⚕️ Doctor extra fields
-    if (role === "doctor") {
-      Object.assign(userData, {
-        specialization,
-        experience: Number(experience),
-        fees: Number(fees),
-        hospital,
-        city,
-        phone,
-        about,
-      });
-    }
-
-    await User.create(userData);
-
-    // ✅ Respond first (VERY IMPORTANT)
-    res.status(201).json({
-      message: "Registered successfully! Check your email for OTP.",
-      requiresVerification: true,
-      email: emailLower,
+      otpExpiry: Date.now() + 10 * 60 * 1000,
     });
 
-    // 📧 Send email in background
+    res.status(201).json({
+      message: "Registered successfully",
+      requiresVerification: true,
+    });
+
     emailBackground(emailLower, otp, name);
   } catch (err) {
-    console.error("Register error:", err.message);
-
-    if (err.code === 11000) {
-      return res
-        .status(400)
-        .json({ message: "Email already registered. Please login." });
-    }
-
-    res
-      .status(500)
-      .json({ message: err.message || "Registration failed." });
+    res.status(500).json({ message: err.message });
   }
 };
 
-// ==============================
-// 🟢 VERIFY OTP
-// ==============================
+// ================= VERIFY OTP =================
 const verifyOtp = async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -133,18 +80,10 @@ const verifyOtp = async (req, res) => {
       email: email.toLowerCase().trim(),
     });
 
-    if (!user)
-      return res.status(404).json({ message: "Account not found." });
-
-    if (user.isVerified)
-      return res
-        .status(400)
-        .json({ message: "Already verified. Please login." });
+    if (!user) return res.status(404).json({ message: "Not found" });
 
     if (!user.isOtpValid(otp))
-      return res
-        .status(400)
-        .json({ message: "Invalid or expired OTP." });
+      return res.status(400).json({ message: "Invalid OTP" });
 
     user.isVerified = true;
     user.otp = undefined;
@@ -153,10 +92,6 @@ const verifyOtp = async (req, res) => {
     await user.save();
 
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
       token: generateToken(user._id),
     });
   } catch (err) {
@@ -164,41 +99,7 @@ const verifyOtp = async (req, res) => {
   }
 };
 
-// ==============================
-// 🟢 RESEND OTP
-// ==============================
-const resendOtp = async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    const user = await User.findOne({
-      email: email.toLowerCase().trim(),
-    });
-
-    if (!user)
-      return res.status(404).json({ message: "Account not found." });
-
-    if (user.isVerified)
-      return res.status(400).json({ message: "Already verified." });
-
-    const otp = generateOtp();
-
-    user.otp = otp;
-    user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-
-    await user.save();
-
-    res.json({ message: "New OTP sent to your email." });
-
-    emailBackground(email.toLowerCase().trim(), otp, user.name);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
-
-// ==============================
-// 🟢 LOGIN
-// ==============================
+// ================= LOGIN =================
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -208,36 +109,25 @@ const login = async (req, res) => {
     });
 
     if (!user || !(await user.matchPassword(password))) {
-      return res
-        .status(401)
-        .json({ message: "Invalid email or password." });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 🔒 Not verified → send OTP again
     if (!user.isVerified) {
       const otp = generateOtp();
-
       user.otp = otp;
-      user.otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
-
+      user.otpExpiry = Date.now() + 10 * 60 * 1000;
       await user.save();
 
       res.status(403).json({
-        message: "Email not verified. OTP sent.",
+        message: "Verify email first",
         requiresVerification: true,
-        email: email.toLowerCase().trim(),
       });
 
-      emailBackground(email.toLowerCase().trim(), otp, user.name);
+      emailBackground(email.toLowerCase(), otp, user.name);
       return;
     }
 
-    // ✅ Verified login
     res.json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
       token: generateToken(user._id),
     });
   } catch (err) {
@@ -245,22 +135,8 @@ const login = async (req, res) => {
   }
 };
 
-// ==============================
-// 🟢 GET PROFILE
-// ==============================
-const getMe = async (req, res) => {
-  res.json({
-    _id: req.user._id,
-    name: req.user.name,
-    email: req.user.email,
-    role: req.user.role,
-  });
-};
-
 module.exports = {
   register,
   verifyOtp,
-  resendOtp,
   login,
-  getMe,
 };
