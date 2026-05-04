@@ -1,12 +1,12 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-const { sendOtpEmail, sendBookingConfirmation } = require("../utils/emailService");
+const { sendOtpEmail } = require("../utils/emailService");
 
 const generateToken = (id) => jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 const generateOtp = () => crypto.randomInt(100000, 999999).toString();
 
-// Send email in background — never blocks the HTTP response
+// Sends email AFTER HTTP response is already sent — never blocks
 const emailBackground = (email, otp, name) => {
   setImmediate(() => {
     sendOtpEmail(email, otp, name)
@@ -44,13 +44,16 @@ const register = async (req, res) => {
     };
 
     if (role === "doctor") {
-      Object.assign(userData, { specialization, experience: Number(experience), fees: Number(fees), hospital, city, phone, about });
+      Object.assign(userData, {
+        specialization, experience: Number(experience), fees: Number(fees),
+        hospital, city, phone, about,
+      });
     }
 
     await User.create(userData);
 
-    // ✅ Respond FIRST then send email
-    res.status(201).json({ message: "Registered! Check your email for OTP.", requiresVerification: true, email: emailLower });
+    // ✅ Respond immediately — never wait for email
+    res.status(201).json({ message: "Registered! Check your email for the OTP.", requiresVerification: true, email: emailLower });
     emailBackground(emailLower, otp, name);
 
   } catch (err) {
@@ -74,7 +77,10 @@ const verifyOtp = async (req, res) => {
     user.otpExpiry = undefined;
     await user.save();
 
-    res.json({ _id: user._id, name: user.name, email: user.email, role: user.role, token: generateToken(user._id) });
+    res.json({
+      _id: user._id, name: user.name, email: user.email, role: user.role,
+      token: generateToken(user._id),
+    });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
