@@ -3,35 +3,25 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
-    name:     { type: String, required: true, trim: true, minlength: 2, maxlength: 50 },
-    email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
-    password: { type: String, required: true, minlength: 6 },
-    role:     { type: String, enum: ["user", "doctor"], default: "user" },
-
-    // Email verification
-    isVerified: { type: Boolean, default: false },
-    otp:        { type: String },
-    otpExpiry:  { type: Date },
-
+    name:           { type: String, required: true, trim: true },
+    email:          { type: String, required: true, unique: true, lowercase: true, trim: true },
+    password:       { type: String, required: true },
+    role:           { type: String, enum: ["user", "doctor"], default: "user" },
+    isVerified:     { type: Boolean, default: false },
+    otp:            { type: String },
+    otpExpiry:      { type: Date },
     // Doctor fields
     specialization: { type: String },
-    experience:     { type: Number, min: 0, max: 60 },
-    fees:           { type: Number, min: 0 },
+    experience:     { type: Number },
+    fees:           { type: Number },
     hospital:       { type: String },
     city:           { type: String },
     phone:          { type: String },
     about:          { type: String },
     available:      { type: Boolean, default: true },
-    slots: {
-      type: [String],
-      default: ["09:00 AM","10:00 AM","11:00 AM","12:00 PM","02:00 PM","03:00 PM","04:00 PM","05:00 PM"],
-    },
-
-    // Photos (stored as base64)
-    profilePhoto:  { type: String },
-    hospitalPhoto: { type: String },
-
-    // Exact location for map navigation
+    slots:          { type: [String], default: ["09:00 AM","10:00 AM","11:00 AM","12:00 PM","02:00 PM","03:00 PM","04:00 PM","05:00 PM"] },
+    profilePhoto:   { type: String },
+    hospitalPhoto:  { type: String },
     location: {
       lat:     { type: Number },
       lng:     { type: Number },

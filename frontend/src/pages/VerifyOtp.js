@@ -2,8 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import API from "../services/api";
 
-function VerifyOtp() {
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+export default function VerifyOtp() {
+  const [otp, setOtp] = useState(["","","","","",""]);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState("");
@@ -13,76 +13,51 @@ function VerifyOtp() {
   const location = useLocation();
   const email = location.state?.email;
 
-  // Redirect if no email passed
-  useEffect(() => {
-    if (!email) navigate("/register");
-  }, [email, navigate]);
-
-  // Countdown timer for resend
+  useEffect(() => { if (!email) navigate("/register"); }, [email, navigate]);
   useEffect(() => {
     if (countdown <= 0) return;
     const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(t);
   }, [countdown]);
 
-  const handleChange = (val, idx) => {
-    if (!/^\d?$/.test(val)) return; // only digits
-    const newOtp = [...otp];
-    newOtp[idx] = val;
-    setOtp(newOtp);
+  const onChange = (val, idx) => {
+    if (!/^\d?$/.test(val)) return;
+    const n = [...otp]; n[idx] = val; setOtp(n);
     if (val && idx < 5) inputs.current[idx + 1]?.focus();
   };
 
-  const handleKeyDown = (e, idx) => {
-    if (e.key === "Backspace" && !otp[idx] && idx > 0) {
-      inputs.current[idx - 1]?.focus();
-    }
+  const onKeyDown = (e, idx) => {
+    if (e.key === "Backspace" && !otp[idx] && idx > 0) inputs.current[idx - 1]?.focus();
   };
 
-  const handlePaste = (e) => {
-    const paste = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6);
-    if (paste.length === 6) {
-      setOtp(paste.split(""));
-      inputs.current[5]?.focus();
-    }
+  const onPaste = (e) => {
+    const p = e.clipboardData.getData("text").replace(/\D/g,"").slice(0,6);
+    if (p.length === 6) { setOtp(p.split("")); inputs.current[5]?.focus(); }
   };
 
   const verify = async () => {
     const otpStr = otp.join("");
-    if (otpStr.length < 6) return setError("Please enter the complete 6-digit OTP");
-    setError("");
-    setLoading(true);
+    if (otpStr.length < 6) return setError("Enter the complete 6-digit OTP");
+    setError(""); setLoading(true);
     try {
       const res = await API.post("/auth/verify-otp", { email, otp: otpStr });
       localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify({
-        name: res.data.name,
-        email: res.data.email,
-        role: res.data.role,
-      }));
+      localStorage.setItem("user", JSON.stringify({ name: res.data.name, email: res.data.email, role: res.data.role }));
       navigate("/", { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || "Verification failed");
-      setOtp(["", "", "", "", "", ""]);
-      inputs.current[0]?.focus();
-    } finally {
-      setLoading(false);
-    }
+      setOtp(["","","","","",""]); inputs.current[0]?.focus();
+    } finally { setLoading(false); }
   };
 
-  const resendOtp = async () => {
-    setResending(true);
-    setError("");
+  const resend = async () => {
+    setResending(true); setError("");
     try {
       await API.post("/auth/resend-otp", { email });
-      setCountdown(60);
-      setOtp(["", "", "", "", "", ""]);
-      inputs.current[0]?.focus();
+      setCountdown(60); setOtp(["","","","","",""]); inputs.current[0]?.focus();
     } catch (err) {
       setError(err.response?.data?.message || "Failed to resend OTP");
-    } finally {
-      setResending(false);
-    }
+    } finally { setResending(false); }
   };
 
   return (
@@ -93,56 +68,30 @@ function VerifyOtp() {
         <p className="text-gray-400 text-sm mb-1">We sent a 6-digit OTP to</p>
         <p className="text-blue-600 font-semibold text-sm mb-6">{email}</p>
 
-        {error && (
-          <div className="bg-red-50 text-red-500 text-sm px-4 py-2 rounded-lg mb-4 border border-red-200">
-            {error}
-          </div>
-        )}
+        {error && <div className="bg-red-50 text-red-500 text-sm px-4 py-2 rounded-lg mb-4 border border-red-200">{error}</div>}
 
-        {/* OTP Input Boxes */}
-        <div className="flex justify-center gap-2 mb-6" onPaste={handlePaste}>
-          {otp.map((digit, idx) => (
-            <input
-              key={idx}
-              ref={(el) => (inputs.current[idx] = el)}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(e.target.value, idx)}
-              onKeyDown={(e) => handleKeyDown(e, idx)}
+        <div className="flex justify-center gap-2 mb-6" onPaste={onPaste}>
+          {otp.map((d, i) => (
+            <input key={i} ref={(el) => (inputs.current[i] = el)} type="text" inputMode="numeric" maxLength={1} value={d}
+              onChange={(e) => onChange(e.target.value, i)} onKeyDown={(e) => onKeyDown(e, i)}
               className="w-11 h-12 text-center text-xl font-bold border-2 rounded-xl focus:outline-none focus:border-blue-500 transition"
-              style={{ borderColor: digit ? "#2563eb" : "#e5e7eb" }}
-            />
+              style={{ borderColor: d ? "#2563eb" : "#e5e7eb" }} />
           ))}
         </div>
 
-        <button
-          onClick={verify}
-          disabled={loading || otp.join("").length < 6}
-          className="bg-blue-600 text-white py-3 w-full rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 mb-4"
-        >
+        <button onClick={verify} disabled={loading || otp.join("").length < 6}
+          className="bg-blue-600 text-white py-3 w-full rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60 mb-4">
           {loading ? "Verifying..." : "Verify Email"}
         </button>
 
-        {/* Resend */}
         <p className="text-sm text-gray-400">
           Didn't receive it?{" "}
-          {countdown > 0 ? (
-            <span className="text-gray-400">Resend in {countdown}s</span>
-          ) : (
-            <button
-              onClick={resendOtp}
-              disabled={resending}
-              className="text-blue-600 font-semibold hover:underline disabled:opacity-60"
-            >
-              {resending ? "Sending..." : "Resend OTP"}
-            </button>
-          )}
+          {countdown > 0
+            ? <span>Resend in {countdown}s</span>
+            : <button onClick={resend} disabled={resending} className="text-blue-600 font-semibold hover:underline disabled:opacity-60">{resending ? "Sending..." : "Resend OTP"}</button>
+          }
         </p>
       </div>
     </div>
   );
 }
-
-export default VerifyOtp;
