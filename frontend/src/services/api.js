@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // ✅ FORCE Render backend (no env confusion)
-const BASE_URL = "https://docmeet-2.onrender.com/api";
+const BASE_URL = "https://docmeet-3.onrender.com/api";
 
 const API = axios.create({
   baseURL: BASE_URL,
