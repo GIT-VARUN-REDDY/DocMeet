@@ -1,27 +1,27 @@
 import axios from "axios";
 
-// ✅ Use local backend for development
-// Change to your Render URL only after pushing all latest code to GitHub
-const BASE_URL = process.env.REACT_APP_API_URL || "https://docmeet-2.onrender.com/api";
+// ✅ FORCE Render backend (no env confusion)
+const BASE_URL = "https://docmeet-2.onrender.com/api";
 
 const API = axios.create({
   baseURL: BASE_URL,
 });
 
-// Attach token to every request
+// Attach token
 API.interceptors.request.use((req) => {
   const token = localStorage.getItem("token");
-  if (token) req.headers.Authorization = `Bearer ${token}`;
+  if (token) {
+    req.headers.Authorization = `Bearer ${token}`;
+  }
   return req;
 });
 
-// Handle 401 globally
+// Handle 401
 API.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      localStorage.clear();
       window.location.href = "/login";
     }
     return Promise.reject(err);

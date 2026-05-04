@@ -22,22 +22,35 @@ function RegisterUser() {
   };
 
   const register = async () => {
-    setError("");
-    if (!form.name || !form.email || !form.password)
-      return setError("All fields are required");
-    if (!pwChecks.length || !pwChecks.upper || !pwChecks.number)
-      return setError("Password doesn't meet requirements");
+  setError("");
 
-    setLoading(true);
-    try {
-      await API.post("/auth/register", { ...form, role: "user" });
-      navigate("/verify-otp", { state: { email: form.email } });
-    } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!form.name || !form.email || !form.password)
+    return setError("All fields are required");
+
+  if (!pwChecks.length || !pwChecks.upper || !pwChecks.number)
+    return setError("Password doesn't meet requirements");
+
+  setLoading(true);
+
+  try {
+    await API.post("/auth/register", {
+      ...form,
+      role: "user",
+    });
+
+    navigate("/verify-otp", { state: { email: form.email } });
+
+  } catch (err) {
+    console.log("Register error:", err);
+
+    setError(
+      err.response?.data?.message ||
+      "Server not responding. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
 
   const Check = ({ ok, label }) => (
     <p className={`text-xs flex items-center gap-1 ${ok ? "text-green-500" : "text-gray-400"}`}>
@@ -77,7 +90,9 @@ function RegisterUser() {
           <p className="text-gray-400 text-sm mb-6">You'll receive an OTP to verify your email</p>
 
           {error && (
-            <div className="bg-red-50 text-red-500 text-sm px-4 py-2 rounded-lg mb-4 border border-red-200">{error}</div>
+            <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-lg mb-4 border border-red-200">
+              {error}
+            </div>
           )}
 
           <input
@@ -104,11 +119,10 @@ function RegisterUser() {
             onChange={handleChange}
           />
 
-          {/* Password strength checks */}
           {form.password && (
             <div className="mb-4 space-y-1 px-1">
               <Check ok={pwChecks.length} label="At least 6 characters" />
-              <Check ok={pwChecks.upper}  label="One uppercase letter" />
+              <Check ok={pwChecks.upper} label="One uppercase letter" />
               <Check ok={pwChecks.number} label="One number" />
             </div>
           )}
@@ -118,7 +132,12 @@ function RegisterUser() {
             disabled={loading}
             className="bg-blue-600 text-white py-3 w-full rounded-xl font-semibold hover:bg-blue-700 transition disabled:opacity-60"
           >
-            {loading ? "Sending OTP..." : "Register as Patient"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="animate-spin rounded-full h-4 w-4 border-t-2 border-white"></span>
+                Sending OTP...
+              </span>
+            ) : "Register as Patient"}
           </button>
 
           <p className="text-center text-sm text-gray-400 mt-5">

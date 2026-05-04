@@ -35,29 +35,39 @@ function RegisterDoctor() {
   };
  
   const register = async () => {
-    setError("");
-    const { name, email, password, specialization, experience, fees, hospital, city, phone } = form;
- 
-    if (!name || !email || !password || !specialization || !experience || !fees || !hospital || !city || !phone)
-      return setError("All fields except bio are required");
-    if (!pwChecks.length || !pwChecks.upper || !pwChecks.number)
-      return setError("Password doesn't meet requirements");
- 
-    setLoading(true);
-    try {
-      await API.post("/auth/register", {
-        ...form,
-        role: "doctor",
-        experience: Number(experience),
-        fees: Number(fees),
-      });
-      navigate("/verify-otp", { state: { email } });
-    } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setError("");
+
+  const { name, email, password, specialization, experience, fees, hospital, city, phone } = form;
+
+  if (!name || !email || !password || !specialization || !experience || !fees || !hospital || !city || !phone)
+    return setError("All fields except bio are required");
+
+  if (!pwChecks.length || !pwChecks.upper || !pwChecks.number)
+    return setError("Password doesn't meet requirements");
+
+  setLoading(true);
+
+  try {
+    await API.post("/auth/register", {
+      ...form,
+      role: "doctor",
+      experience: Number(experience),
+      fees: Number(fees),
+    });
+
+    navigate("/verify-otp", { state: { email } });
+
+  } catch (err) {
+    console.log("Doctor register error:", err);
+
+    setError(
+      err.response?.data?.message ||
+      "Server not responding. Please try again."
+    );
+  } finally {
+    setLoading(false);
+  }
+};
  
   return (
     <div className="flex min-h-screen bg-gradient-to-br from-teal-50 to-teal-100">
