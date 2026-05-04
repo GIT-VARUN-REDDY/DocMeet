@@ -10,19 +10,36 @@ export default function DoctorDetail() {
 
   useEffect(() => {
     API.get(`/doctor/${id}`)
-      .then((res) => setDoc(res.data?.doctor || res.data))
+      .then((res) => {
+        // Handle both { doctor: {...} } and plain object responses
+        setDoc(res.data?.doctor || res.data);
+      })
       .catch(() => alert("Failed to load doctor details"))
       .finally(() => setLoading(false));
   }, [id]);
 
+  // ✅ Only opens maps when user CLICKS — never asks for device location
   const openMaps = () => {
     if (!doc) return;
     if (doc.location?.lat && doc.location?.lng) {
-      window.open(`https://www.google.com/maps?q=${doc.location.lat},${doc.location.lng}`, "_blank");
+      // Exact GPS coordinates — most accurate
+      window.open(
+        `https://www.google.com/maps?q=${doc.location.lat},${doc.location.lng}`,
+        "_blank"
+      );
     } else if (doc.location?.address) {
-      window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.location.address)}`, "_blank");
-    } else if (doc.hospital) {
-      window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.hospital + " " + (doc.city || ""))}`, "_blank");
+      // Address string search
+      window.open(
+        `https://www.google.com/maps/search/${encodeURIComponent(doc.location.address)}`,
+        "_blank"
+      );
+    } else if (doc.hospital || doc.city) {
+      // Fallback: hospital name + city
+      const query = [doc.hospital, doc.city].filter(Boolean).join(", ");
+      window.open(
+        `https://www.google.com/maps/search/${encodeURIComponent(query)}`,
+        "_blank"
+      );
     }
   };
 
@@ -33,36 +50,37 @@ export default function DoctorDetail() {
   );
 
   if (!doc) return (
-    <div className="flex justify-center items-center min-h-screen text-gray-400">
+    <div className="flex justify-center items-center min-h-screen text-gray-400 flex-col gap-3">
+      <p className="text-5xl">🩺</p>
       <p>Doctor not found</p>
+      <button onClick={() => navigate("/doctors")} className="text-blue-600 hover:underline text-sm">← Back to Doctors</button>
     </div>
   );
+
+  const hasMapData = doc.location?.lat || doc.location?.address || doc.hospital;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100">
 
-      {/* ── HERO BANNER ── */}
+      {/* ── HERO: Hospital photo banner ── */}
       <div className="relative h-56 w-full overflow-hidden">
-        {doc.hospitalPhoto ? (
-          <img src={doc.hospitalPhoto} alt="Hospital" className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-400" />
-        )}
-        {/* Dark overlay */}
-        <div className="absolute inset-0 bg-black/30" />
+        {doc.hospitalPhoto
+          ? <img src={doc.hospitalPhoto} alt="Hospital" className="w-full h-full object-cover" />
+          : <div className="w-full h-full bg-gradient-to-r from-blue-600 to-blue-400" />
+        }
+        <div className="absolute inset-0 bg-black/35" />
 
-        {/* Back button */}
         <button
           onClick={() => navigate("/doctors")}
           className="absolute top-4 left-4 bg-white/20 backdrop-blur text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-white/30 transition"
         >
-          ← Back to Doctors
+          ← Back
         </button>
 
-        {/* Hospital label */}
-        <div className="absolute bottom-4 left-4 text-white">
+        <div className="absolute bottom-4 left-5 text-white">
           <p className="text-xs font-semibold opacity-70 uppercase tracking-wider">Hospital / Clinic</p>
           <p className="text-lg font-bold">{doc.hospital || "Not specified"}</p>
+          {doc.city && <p className="text-sm opacity-80">📍 {doc.city}</p>}
         </div>
       </div>
 
@@ -72,12 +90,11 @@ export default function DoctorDetail() {
         <div className="bg-white rounded-3xl shadow-xl p-6 -mt-8 relative z-10 mb-6">
           <div className="flex items-start gap-5">
             {/* Profile photo */}
-            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-blue-100 flex items-center justify-center shadow-lg shrink-0 border-4 border-white -mt-12">
-              {doc.profilePhoto ? (
-                <img src={doc.profilePhoto} alt={doc.name} className="w-full h-full object-cover object-top" />
-              ) : (
-                <span className="text-4xl font-bold text-blue-600">{doc.name?.charAt(0).toUpperCase()}</span>
-              )}
+            <div className="w-24 h-24 rounded-2xl overflow-hidden bg-blue-100 flex items-center justify-center shadow-lg shrink-0 border-4 border-white -mt-14">
+              {doc.profilePhoto
+                ? <img src={doc.profilePhoto} alt={doc.name} className="w-full h-full object-cover object-top" />
+                : <span className="text-4xl font-bold text-blue-600">{doc.name?.charAt(0)?.toUpperCase()}</span>
+              }
             </div>
 
             <div className="flex-1 pt-1">
@@ -88,15 +105,12 @@ export default function DoctorDetail() {
                     {doc.specialization || "General Physician"}
                   </span>
                 </div>
-                {doc.available ? (
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1">
-                    <span className="w-2 h-2 bg-green-500 rounded-full inline-block"></span> Available
-                  </span>
-                ) : (
-                  <span className="bg-red-100 text-red-500 text-xs font-bold px-3 py-1.5 rounded-full">
-                    Unavailable
-                  </span>
-                )}
+                <span className={`text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1 ${
+                  doc.available ? "bg-green-100 text-green-700" : "bg-red-100 text-red-500"
+                }`}>
+                  <span className={`w-2 h-2 rounded-full inline-block ${doc.available ? "bg-green-500" : "bg-red-400"}`}></span>
+                  {doc.available ? "Available" : "Unavailable"}
+                </span>
               </div>
             </div>
           </div>
@@ -154,15 +168,15 @@ export default function DoctorDetail() {
             {doc.location?.address && (
               <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl">
                 <span className="text-2xl">🗺️</span>
-                <div className="flex-1">
+                <div>
                   <p className="text-xs text-gray-400 font-medium">Exact Address</p>
                   <p className="text-gray-700 text-sm">{doc.location.address}</p>
                 </div>
               </div>
             )}
 
-            {/* Navigate button */}
-            {(doc.location?.lat || doc.hospital || doc.location?.address) && (
+            {/* ✅ Navigate button — only opens Google Maps, never asks for device location */}
+            {hasMapData && (
               <button
                 onClick={openMaps}
                 className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-2xl transition flex items-center justify-center gap-2 mt-2"
@@ -192,18 +206,6 @@ export default function DoctorDetail() {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* ── HOSPITAL PHOTO full view ── */}
-        {doc.hospitalPhoto && (
-          <div className="bg-white rounded-3xl shadow-lg p-6 mb-6">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">🏥 Hospital / Clinic Photo</h2>
-            <img
-              src={doc.hospitalPhoto}
-              alt="Hospital"
-              className="w-full rounded-2xl object-cover max-h-64"
-            />
           </div>
         )}
 
