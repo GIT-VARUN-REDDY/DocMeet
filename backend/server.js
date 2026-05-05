@@ -12,6 +12,7 @@ app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use("/api/auth",        require("./routes/authRoutes"));
 app.use("/api/doctor",      require("./routes/doctorRoutes"));
 app.use("/api/appointment", require("./routes/appointmentRoutes"));
+app.use("/api/payment",     require("./routes/paymentRoutes")); // ✅ Razorpay
 
 app.get("/", (req, res) => res.json({ message: "DocMeet API running ✅" }));
 

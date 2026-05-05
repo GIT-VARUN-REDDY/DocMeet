@@ -3,7 +3,6 @@ const router = express.Router();
 const Appointment = require("../models/Appointment");
 const User = require("../models/User");
 const { protect, authorize } = require("../middleware/authMiddleware");
-const { sendBookingConfirmation } = require("../utils/emailService");
 
 // GET available slots
 router.get("/available", async (req, res) => {
@@ -24,10 +23,10 @@ router.get("/available", async (req, res) => {
   }
 });
 
-// POST book appointment
+// POST book appointment (with payment info)
 router.post("/book", protect, authorize("user"), async (req, res) => {
   try {
-    const { doctorId, date, time, symptoms } = req.body;
+    const { doctorId, date, time, symptoms, paymentId, paid, amount } = req.body;
     if (!doctorId || !date || !time) return res.status(400).json({ message: "doctorId, date, time required" });
 
     const doctor = await User.findById(doctorId);
@@ -37,18 +36,17 @@ router.post("/book", protect, authorize("user"), async (req, res) => {
     if (existing) return res.status(409).json({ message: "Slot already booked. Choose another." });
 
     const appointment = await Appointment.create({
-      user: req.user._id, doctor: doctorId, date, time,
-      symptoms: symptoms || "General checkup", status: "Confirmed",
+      user: req.user._id,
+      doctor: doctorId,
+      date, time,
+      symptoms: symptoms || "General checkup",
+      status: "Confirmed",
+      paymentId: paymentId || null,
+      paid: paid || false,
+      amount: amount || 0,
     });
 
     res.status(201).json({ message: "Appointment confirmed!", appointment });
-
-    // Send confirmation email in background
-    setImmediate(() => {
-      sendBookingConfirmation(req.user.email, req.user.name, doctor.name, date, time)
-        .catch((e) => console.error("Booking email failed:", e.message));
-    });
-
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
