@@ -7,9 +7,6 @@ const userSchema = new mongoose.Schema(
     email:          { type: String, required: true, unique: true, lowercase: true, trim: true },
     password:       { type: String, required: true },
     role:           { type: String, enum: ["user", "doctor"], default: "user" },
-    isVerified:     { type: Boolean, default: false },
-    otp:            { type: String },
-    otpExpiry:      { type: Date },
     // Doctor fields
     specialization: { type: String },
     experience:     { type: Number },
@@ -38,10 +35,6 @@ userSchema.pre("save", async function () {
 
 userSchema.methods.matchPassword = async function (entered) {
   return await bcrypt.compare(entered, this.password);
-};
-
-userSchema.methods.isOtpValid = function (enteredOtp) {
-  return this.otp === enteredOtp && this.otpExpiry > Date.now();
 };
 
 module.exports = mongoose.model("User", userSchema);

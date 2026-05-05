@@ -23,8 +23,10 @@ export default function RegisterUser() {
     if (!pw.length || !pw.upper || !pw.number) return setError("Password doesn't meet requirements");
     setLoading(true);
     try {
-      await API.post("/auth/register", { ...form, role: "user" });
-      navigate("/verify-otp", { state: { email: form.email } });
+      const res = await API.post("/auth/register", { ...form, role: "user" });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify({ name: res.data.name, email: res.data.email, role: res.data.role }));
+      navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Registration failed");
     } finally {
@@ -53,7 +55,7 @@ export default function RegisterUser() {
           </div>
 
           <h2 className="text-2xl font-bold text-gray-800 mb-1">Create Patient Account</h2>
-          <p className="text-gray-400 text-sm mb-6">You'll receive an OTP to verify your email</p>
+          <p className="text-gray-400 text-sm mb-6">Register to book doctor appointments</p>
 
           {error && <div className="bg-red-50 text-red-500 text-sm px-4 py-3 rounded-lg mb-4 border border-red-200">{error}</div>}
 

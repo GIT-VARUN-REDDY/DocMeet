@@ -28,8 +28,10 @@ export default function RegisterDoctor() {
     if (!pw.length||!pw.upper||!pw.number) return setError("Password doesn't meet requirements");
     setLoading(true);
     try {
-      await API.post("/auth/register", { ...form, role:"doctor", experience:Number(form.experience), fees:Number(form.fees) });
-      navigate("/verify-otp", { state: { email } });
+      const res = await API.post("/auth/register", { ...form, role:"doctor", experience:Number(form.experience), fees:Number(form.fees) });
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify({ name: res.data.name, email: res.data.email, role: res.data.role }));
+      navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Registration failed");
     } finally {
@@ -43,10 +45,10 @@ export default function RegisterDoctor() {
         <p className="text-7xl mb-6">👨‍⚕️</p>
         <h2 className="text-3xl font-bold mb-3">Join as a Doctor</h2>
         <div className="mt-6 space-y-3 text-sm text-teal-100">
-          <p>✅ Verified email required</p>
           <p>✅ Patients find you by hospital & city</p>
           <p>✅ Full appointment dashboard</p>
-          <p>✅ Email alerts for bookings</p>
+          <p>✅ Manage your profile & photos</p>
+          <p>✅ Set your availability slots</p>
         </div>
       </div>
 
@@ -58,7 +60,7 @@ export default function RegisterDoctor() {
           </div>
 
           <h2 className="text-2xl font-bold text-gray-800 mb-1">Create Doctor Account</h2>
-          <p className="text-gray-400 text-sm mb-6">Patients will see your profile details</p>
+          <p className="text-gray-400 text-sm mb-6">Patients will see your full profile</p>
 
           {error && <div className="bg-red-50 text-red-500 text-sm px-4 py-2 rounded-lg mb-4 border border-red-200">{error}</div>}
 
@@ -66,7 +68,6 @@ export default function RegisterDoctor() {
           <input name="name" placeholder="Full name" value={form.name} onChange={onChange} className={`${ic} mb-3`} />
           <input name="email" type="email" placeholder="Email" value={form.email} onChange={onChange} className={`${ic} mb-3`} />
           <input name="password" type="password" placeholder="Password" value={form.password} onChange={onChange} className={`${ic} mb-2`} />
-
           {form.password && (
             <div className="mb-4 space-y-1 px-1">
               {[["length","At least 6 characters"],["upper","One uppercase letter"],["number","One number"]].map(([k,l]) => (
