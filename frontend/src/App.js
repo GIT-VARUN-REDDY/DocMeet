@@ -14,6 +14,7 @@ import RegisterUser from "./pages/RegisterUser";
 import RegisterDoctor from "./pages/RegisterDoctor";
 
 
+
 function App() {
   return (
     <BrowserRouter>
@@ -31,6 +32,7 @@ function App() {
         <Route path="/dashboard"       element={<ProtectedRoute allowedRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
         <Route path="/profile"         element={<ProtectedRoute allowedRole="doctor"><DoctorProfile /></ProtectedRoute>} />
         <Route path="*"                element={<div className="flex justify-center items-center h-screen text-gray-400 flex-col gap-3"><p className="text-6xl">404</p><p>Page not found</p></div>} />
+
       </Routes>
     </BrowserRouter>
   );
