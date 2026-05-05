@@ -12,7 +12,7 @@ import MyAppointments from "./pages/MyAppointments";
 import Login from "./pages/Login";
 import RegisterUser from "./pages/RegisterUser";
 import RegisterDoctor from "./pages/RegisterDoctor";
-import VerifyOtp from "./pages/VerifyOtp";
+
 
 function App() {
   return (
@@ -26,7 +26,6 @@ function App() {
         <Route path="/login"           element={<Login />} />
         <Route path="/register"        element={<RegisterUser />} />
         <Route path="/register/doctor" element={<RegisterDoctor />} />
-        <Route path="/verify-otp"      element={<VerifyOtp />} />
         <Route path="/book/:id"        element={<ProtectedRoute allowedRole="user"><Book /></ProtectedRoute>} />
         <Route path="/my"              element={<ProtectedRoute allowedRole="user"><MyAppointments /></ProtectedRoute>} />
         <Route path="/dashboard"       element={<ProtectedRoute allowedRole="doctor"><DoctorDashboard /></ProtectedRoute>} />
