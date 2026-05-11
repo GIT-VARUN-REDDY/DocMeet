@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../services/api";
+import { StarDisplay } from "../components/StarRating";
 
 const SPECIALIZATIONS = [
   "All","Cardiologist","Dermatologist","Neurologist","Orthopedic",
@@ -8,7 +9,7 @@ const SPECIALIZATIONS = [
   "ENT Specialist","Ophthalmologist",
 ];
 
-function Doctors() {
+export default function Doctors() {
   const [doctors, setDoctors] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [search, setSearch] = useState("");
@@ -46,39 +47,30 @@ function Doctors() {
     e.stopPropagation();
     if (doc.location?.lat && doc.location?.lng) {
       window.open(`https://www.google.com/maps?q=${doc.location.lat},${doc.location.lng}`, "_blank");
-    } else if (doc.location?.address) {
-      window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.location.address)}`, "_blank");
     } else if (doc.hospital) {
       window.open(`https://www.google.com/maps/search/${encodeURIComponent(doc.hospital + " " + (doc.city || ""))}`, "_blank");
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-8">
       <div className="text-center mb-8">
         <h2 className="text-4xl font-bold text-blue-700 mb-2">Find Your Doctor</h2>
         <p className="text-gray-500">Search by name, specialty, hospital, or city</p>
       </div>
 
-      {/* Search */}
       <div className="max-w-lg mx-auto mb-5">
-        <input
-          type="text"
-          placeholder="🔍 Search by name, specialty, hospital, city..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full border border-blue-200 rounded-full px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700"
-        />
+        <input type="text" placeholder="🔍 Search by name, specialty, hospital, city..."
+          value={search} onChange={(e) => setSearch(e.target.value)}
+          className="w-full border border-blue-200 rounded-full px-5 py-3 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-700" />
       </div>
 
-      {/* Filter pills */}
       <div className="flex flex-wrap gap-2 justify-center mb-8">
         {SPECIALIZATIONS.map((s) => (
           <button key={s} onClick={() => setFilter(s)}
             className={`px-4 py-1.5 rounded-full text-sm font-medium transition ${
               filter === s ? "bg-blue-600 text-white shadow" : "bg-white text-blue-600 border border-blue-200 hover:bg-blue-50"
-            }`}
-          >{s}</button>
+            }`}>{s}</button>
         ))}
       </div>
 
@@ -100,64 +92,38 @@ function Doctors() {
         {filtered.map((doc) => (
           <div key={doc._id} className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden">
 
-            {/* ── PHOTO BANNER: 35% profile | 65% hospital ── */}
+            {/* 35% profile | 65% hospital photo */}
             <div className="h-36 flex">
-              {/* Profile photo — 35% */}
               <div className="w-[35%] relative overflow-hidden bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shrink-0">
-                {doc.profilePhoto ? (
-                  <img
-                    src={doc.profilePhoto}
-                    alt={`Dr. ${doc.name}`}
-                    className="w-full h-full object-cover object-top"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-white">
-                    <span className="text-4xl font-bold">{doc.name?.charAt(0).toUpperCase()}</span>
-                    <span className="text-xs mt-1 opacity-70">No photo</span>
-                  </div>
-                )}
-                {/* Label */}
-                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5 font-medium">
-                  Doctor
-                </div>
+                {doc.profilePhoto
+                  ? <img src={doc.profilePhoto} alt={doc.name} className="w-full h-full object-cover object-top" />
+                  : <span className="text-4xl font-bold text-white">{doc.name?.charAt(0).toUpperCase()}</span>
+                }
+                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5">Doctor</div>
               </div>
-
-              {/* Divider */}
               <div className="w-px bg-white/50 shrink-0" />
-
-              {/* Hospital photo — 65% */}
-              <div className="flex-1 relative overflow-hidden bg-gradient-to-br from-gray-200 to-gray-300 flex items-center justify-center">
-                {doc.hospitalPhoto ? (
-                  <img
-                    src={doc.hospitalPhoto}
-                    alt="Hospital"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex flex-col items-center justify-center text-gray-400">
-                    <span className="text-4xl">🏥</span>
-                    <span className="text-xs mt-1">No hospital photo</span>
-                  </div>
-                )}
-                {/* Label */}
-                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5 font-medium">
-                  Hospital
-                </div>
-                {/* Available badge */}
+              <div className="flex-1 relative overflow-hidden bg-gray-100 flex items-center justify-center">
+                {doc.hospitalPhoto
+                  ? <img src={doc.hospitalPhoto} alt="Hospital" className="w-full h-full object-cover" />
+                  : <span className="text-4xl">🏥</span>
+                }
+                <div className="absolute bottom-0 left-0 right-0 bg-black/40 text-white text-[10px] text-center py-0.5">Hospital</div>
                 {doc.available && (
-                  <span className="absolute top-2 right-2 bg-green-400 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold shadow">
-                    ● Available
-                  </span>
+                  <span className="absolute top-2 right-2 bg-green-400 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">● Available</span>
                 )}
               </div>
             </div>
 
-            {/* ── CARD BODY ── */}
             <div className="p-5">
               <h3 className="text-lg font-bold text-gray-800">Dr. {doc.name}</h3>
-              <span className="inline-block mt-1 mb-3 text-xs font-semibold bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
+              <span className="inline-block mt-1 mb-2 text-xs font-semibold bg-blue-100 text-blue-600 px-3 py-1 rounded-full">
                 {doc.specialization || "General Physician"}
               </span>
+
+              {/* ✅ Star rating on card */}
+              <div className="mb-3">
+                <StarDisplay rating={doc.averageRating || 0} total={doc.totalReviews || 0} size="sm" />
+              </div>
 
               <div className="text-sm text-gray-500 space-y-1 mb-4">
                 {doc.hospital && <p>🏥 {doc.hospital}</p>}
@@ -166,27 +132,20 @@ function Doctors() {
                 {doc.fees !== undefined && <p>💰 ₹{doc.fees} consultation</p>}
               </div>
 
-              {/* ── BUTTONS ── */}
               <div className="flex gap-2">
-                <button
-                  onClick={() => navigate(`/book/${doc._id}`)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl transition text-sm"
-                >
-                  Book Appointment
+                <button onClick={() => navigate(`/book/${doc._id}`)}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl transition text-sm">
+                  Book
                 </button>
-                <button
-                  onClick={() => navigate(`/doctor/${doc._id}`)}
+                <button onClick={() => navigate(`/doctor/${doc._id}`)}
                   className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold px-3 py-2 rounded-xl transition text-sm"
-                  title="View full profile"
-                >
+                  title="View profile">
                   👁
                 </button>
                 {(doc.location?.lat || doc.hospital) && (
-                  <button
-                    onClick={(e) => openMaps(e, doc)}
+                  <button onClick={(e) => openMaps(e, doc)}
                     title="Navigate to hospital"
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-xl transition"
-                  >
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-xl transition">
                     🗺️
                   </button>
                 )}
@@ -198,5 +157,3 @@ function Doctors() {
     </div>
   );
 }
-
-export default Doctors;

@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../services/api";
+import { StarPicker } from "../components/StarRating";
 
 export default function MyAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancelling, setCancelling] = useState(null);
+  const [reviewModal, setReviewModal] = useState(null); // appointment object
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [reviewed, setReviewed] = useState({}); // track reviewed doctor IDs
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,9 +34,74 @@ export default function MyAppointments() {
     }
   };
 
+  const openReview = (appt) => {
+    setReviewModal(appt);
+    setRating(0);
+    setComment("");
+  };
+
+  const submitReview = async () => {
+    if (!rating) return alert("Please select a rating");
+    setSubmitting(true);
+    try {
+      await API.post("/reviews", {
+        doctorId: reviewModal.doctor._id,
+        rating,
+        comment,
+        appointmentId: reviewModal._id,
+      });
+      setReviewed((prev) => ({ ...prev, [reviewModal.doctor._id]: true }));
+      setReviewModal(null);
+      alert("✅ Review submitted! Thank you.");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
+
+        {/* Review Modal */}
+        {reviewModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl p-6 w-full max-w-sm">
+              <h3 className="text-lg font-bold text-gray-800 mb-1">Rate Dr. {reviewModal.doctor?.name}</h3>
+              <p className="text-gray-400 text-sm mb-5">How was your experience?</p>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">Your Rating *</p>
+                <StarPicker value={rating} onChange={setRating} />
+                <p className="text-xs text-gray-400 mt-1">
+                  {["","Poor","Fair","Good","Very Good","Excellent"][rating] || ""}
+                </p>
+              </div>
+
+              <textarea
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                placeholder="Share your experience (optional)..."
+                rows={3}
+                maxLength={500}
+                className="border border-gray-200 p-3 w-full rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm resize-none mb-4"
+              />
+
+              <div className="flex gap-2">
+                <button onClick={submitReview} disabled={submitting || !rating}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition disabled:opacity-60">
+                  {submitting ? "Submitting..." : "Submit Review"}
+                </button>
+                <button onClick={() => setReviewModal(null)}
+                  className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition text-sm">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h2 className="text-3xl font-bold text-blue-700">My Appointments</h2>
@@ -73,6 +144,7 @@ export default function MyAppointments() {
                     <p className="text-blue-500 text-xs mb-1">{a.doctor?.specialization}</p>
                     <p className="text-gray-500 text-sm">📅 {a.date} &nbsp; 🕐 {a.time}</p>
                     {a.symptoms && <p className="text-gray-400 text-xs mt-1">📝 {a.symptoms}</p>}
+                    {a.paid && <p className="text-green-600 text-xs mt-1">💳 Paid ₹{a.amount}</p>}
                   </div>
                 </div>
 
@@ -80,15 +152,15 @@ export default function MyAppointments() {
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-green-100 text-green-700">
                     ✅ Confirmed
                   </span>
-                  {/* Payment badge */}
-                  {a.paid ? (
-                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-blue-100 text-blue-700">
-                      💳 Paid ₹{a.amount}
-                    </span>
-                  ) : (
-                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-500">
-                      Free
-                    </span>
+                  {/* ✅ Rate & Review button */}
+                  {!reviewed[a.doctor?._id] && (
+                    <button onClick={() => openReview(a)}
+                      className="text-xs bg-yellow-100 hover:bg-yellow-200 text-yellow-700 font-semibold px-3 py-1 rounded-full transition">
+                      ⭐ Rate Doctor
+                    </button>
+                  )}
+                  {reviewed[a.doctor?._id] && (
+                    <span className="text-xs text-green-500 font-medium">✅ Reviewed</span>
                   )}
                   <button onClick={() => cancel(a._id)} disabled={cancelling === a._id}
                     className="text-xs text-red-400 hover:text-red-600 hover:underline transition disabled:opacity-50">

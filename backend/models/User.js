@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema(
       lng:     { type: Number },
       address: { type: String },
     },
+    // ✅ Rating fields
+    averageRating: { type: Number, default: 0 },
+    totalReviews:  { type: Number, default: 0 },
   },
   { timestamps: true }
 );
