@@ -33,4 +33,4 @@ mongoose
   .catch((err) => {
     console.error("❌ MongoDB error:", err.message);
     process.exit(1);
-  });
+  }); 
