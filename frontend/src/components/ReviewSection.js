@@ -41,9 +41,11 @@ export default function ReviewSection({ doctorId }) {
   };
 
   useEffect(() => {
-    fetchReviews();
-    checkCanReview();
-  }, [doctorId]);
+  fetchReviews();
+  checkCanReview();
+
+  // eslint-disable-next-line
+}, [doctorId]);
 
   const submitReview = async () => {
     if (!rating) return setError("Please select a rating");
