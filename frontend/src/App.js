@@ -15,9 +15,7 @@ import Login from "./pages/Login";
 import RegisterUser from "./pages/RegisterUser";
 import RegisterDoctor from "./pages/RegisterDoctor";
 
-/* NEW COMPONENTS */
-import ReviewSection from "./components/ReviewSection";
-import StarRating from "./components/StarRating";
+
 
 function App() {
   return (
