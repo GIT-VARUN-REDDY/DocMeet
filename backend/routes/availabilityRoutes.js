@@ -7,7 +7,7 @@ const User = require("../models/User");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
-// Convert "09:00 AM" / "02:30 PM" to minutes
+// Convert slot time to minutes
 const slotToMinutes = (slot) => {
   const [time, period] = slot.split(" ");
 
@@ -24,23 +24,30 @@ const slotToMinutes = (slot) => {
   return hours * 60 + minutes;
 };
 
-const now = new Date();
+// Get Indian current time
+const getIndianCurrentMinutes = () => {
+  const indiaTime = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata",
+    })
+  );
 
-// Convert current time to Indian time
-const indiaTime = new Date(
-  now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-);
+  return indiaTime.getHours() * 60 + indiaTime.getMinutes();
+};
 
-const currentMinutes =
-  indiaTime.getHours() * 60 + indiaTime.getMinutes();
-  
-// Today's local date
-const getTodayStr = () => {
-  const now = new Date();
+// Get today's Indian date
+const getIndianToday = () => {
+  const indiaTime = new Date(
+    new Date().toLocaleString("en-US", {
+      timeZone: "Asia/Kolkata",
+    })
+  );
 
-  return `${now.getFullYear()}-${String(
-    now.getMonth() + 1
-  ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${indiaTime.getFullYear()}-${String(
+    indiaTime.getMonth() + 1
+  ).padStart(2, "0")}-${String(
+    indiaTime.getDate()
+  ).padStart(2, "0")}`;
 };
 
 // ─────────────────────────────────────────────
@@ -48,6 +55,7 @@ const getTodayStr = () => {
 // ─────────────────────────────────────────────
 router.get("/:doctorId", async (req, res) => {
   try {
+
     const avail = await DoctorAvailability.findOne({
       doctor: req.params.doctorId,
     });
@@ -56,7 +64,9 @@ router.get("/:doctorId", async (req, res) => {
       blockedDates: avail?.blockedDates || [],
       blockedSlots: avail?.blockedSlots || [],
     });
+
   } catch (err) {
+
     res.status(500).json({
       message: err.message,
     });
@@ -67,7 +77,9 @@ router.get("/:doctorId", async (req, res) => {
 // GET available slots
 // ─────────────────────────────────────────────
 router.get("/:doctorId/slots/:date", async (req, res) => {
+
   try {
+
     const { doctorId, date } = req.params;
 
     // Find doctor
@@ -79,12 +91,12 @@ router.get("/:doctorId/slots/:date", async (req, res) => {
       });
     }
 
-    // Availability settings
+    // Doctor availability
     const avail = await DoctorAvailability.findOne({
       doctor: doctorId,
     });
 
-    // Entire day blocked
+    // Fully blocked date
     if (avail?.blockedDates?.includes(date)) {
       return res.json({
         availableSlots: [],
@@ -96,26 +108,28 @@ router.get("/:doctorId/slots/:date", async (req, res) => {
     const booked = await Appointment.find({
       doctor: doctorId,
       date,
+      status: "Confirmed",
     });
 
     const bookedTimes = booked.map((a) => a.time);
 
-    // Doctor blocked slots
+    // Blocked slots
     const docBlockedSlots =
       avail?.blockedSlots
         ?.filter((s) => s.date === date)
         .map((s) => s.time) || [];
 
-    // All doctor slots
+    // Doctor slots
     const allSlots = doctor.slots || [];
 
-    // Today's date check
-    const isToday = date === getTodayStr();
+    // Today logic
+    const today = getIndianToday();
 
-    // Current time in minutes
-    const currentMinutes = getCurrentMinutes();
+    const isToday = date === today;
 
-    // Final slots
+    const currentMinutes = getIndianCurrentMinutes();
+
+    // Final filtering
     const availableSlots = allSlots.filter((slot) => {
 
       // Already booked
@@ -123,14 +137,19 @@ router.get("/:doctorId/slots/:date", async (req, res) => {
         return false;
       }
 
-      // Manually blocked by doctor
+      // Manually blocked
       if (docBlockedSlots.includes(slot)) {
         return false;
       }
 
-      // Remove past slots if selected date is today
-      if (isToday && slotToMinutes(slot) <= currentMinutes) {
-        return false;
+      // Remove past slots for today
+      if (isToday) {
+
+        const slotMinutes = slotToMinutes(slot);
+
+        if (slotMinutes <= currentMinutes) {
+          return false;
+        }
       }
 
       return true;
@@ -152,13 +171,14 @@ router.get("/:doctorId/slots/:date", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// GET doctor's own settings
+// GET doctor settings
 // ─────────────────────────────────────────────
 router.get(
   "/me/settings",
   protect,
   authorize("doctor"),
   async (req, res) => {
+
     try {
 
       const avail = await DoctorAvailability.findOne({
@@ -180,7 +200,7 @@ router.get(
 );
 
 // ─────────────────────────────────────────────
-// BLOCK / UNBLOCK DATES
+// BLOCK DATES
 // ─────────────────────────────────────────────
 router.put(
   "/block-dates",
@@ -220,7 +240,7 @@ router.put(
 );
 
 // ─────────────────────────────────────────────
-// BLOCK / UNBLOCK SLOTS
+// BLOCK SLOTS
 // ─────────────────────────────────────────────
 router.put(
   "/block-slots",
