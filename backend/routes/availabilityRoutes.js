@@ -24,12 +24,16 @@ const slotToMinutes = (slot) => {
   return hours * 60 + minutes;
 };
 
-// Current minutes
-const getCurrentMinutes = () => {
-  const now = new Date();
-  return now.getHours() * 60 + now.getMinutes();
-};
+const now = new Date();
 
+// Convert current time to Indian time
+const indiaTime = new Date(
+  now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+);
+
+const currentMinutes =
+  indiaTime.getHours() * 60 + indiaTime.getMinutes();
+  
 // Today's local date
 const getTodayStr = () => {
   const now = new Date();
