@@ -7,9 +7,8 @@ const User = require("../models/User");
 
 const { protect, authorize } = require("../middleware/authMiddleware");
 
-// Convert "09:00 AM" / "02:30 PM" to minutes since midnight
+// Convert "09:00 AM" / "02:30 PM" to minutes
 const slotToMinutes = (slot) => {
-
   const [time, period] = slot.split(" ");
 
   let [hours, minutes] = time.split(":").map(Number);
@@ -25,29 +24,26 @@ const slotToMinutes = (slot) => {
   return hours * 60 + minutes;
 };
 
-// Current minutes of today
+// Current minutes
 const getCurrentMinutes = () => {
-
   const now = new Date();
-
   return now.getHours() * 60 + now.getMinutes();
 };
 
-// Today's local date string
+// Today's local date
 const getTodayStr = () => {
-
   const now = new Date();
 
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return `${now.getFullYear()}-${String(
+    now.getMonth() + 1
+  ).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 };
 
 // ─────────────────────────────────────────────
-// GET doctor's availability (public)
+// GET doctor availability
 // ─────────────────────────────────────────────
 router.get("/:doctorId", async (req, res) => {
-
   try {
-
     const avail = await DoctorAvailability.findOne({
       doctor: req.params.doctorId,
     });
@@ -56,9 +52,7 @@ router.get("/:doctorId", async (req, res) => {
       blockedDates: avail?.blockedDates || [],
       blockedSlots: avail?.blockedSlots || [],
     });
-
   } catch (err) {
-
     res.status(500).json({
       message: err.message,
     });
@@ -66,32 +60,28 @@ router.get("/:doctorId", async (req, res) => {
 });
 
 // ─────────────────────────────────────────────
-// GET available slots for selected date
+// GET available slots
 // ─────────────────────────────────────────────
 router.get("/:doctorId/slots/:date", async (req, res) => {
-
   try {
-
     const { doctorId, date } = req.params;
 
     // Find doctor
     const doctor = await User.findById(doctorId);
 
     if (!doctor) {
-
       return res.status(404).json({
         message: "Doctor not found",
       });
     }
 
-    // Doctor availability
+    // Availability settings
     const avail = await DoctorAvailability.findOne({
       doctor: doctorId,
     });
 
     // Entire day blocked
     if (avail?.blockedDates?.includes(date)) {
-
       return res.json({
         availableSlots: [],
         fullyBlocked: true,
@@ -115,17 +105,13 @@ router.get("/:doctorId/slots/:date", async (req, res) => {
     // All doctor slots
     const allSlots = doctor.slots || [];
 
-    // Today logic
+    // Today's date check
     const isToday = date === getTodayStr();
 
+    // Current time in minutes
     const currentMinutes = getCurrentMinutes();
 
-    console.log("Selected Date:", date);
-    console.log("Today:", getTodayStr());
-    console.log("isToday:", isToday);
-    console.log("Current Minutes:", currentMinutes);
-
-    // Final available slots
+    // Final slots
     const availableSlots = allSlots.filter((slot) => {
 
       // Already booked
@@ -133,20 +119,18 @@ router.get("/:doctorId/slots/:date", async (req, res) => {
         return false;
       }
 
-      // Doctor manually blocked
+      // Manually blocked by doctor
       if (docBlockedSlots.includes(slot)) {
         return false;
       }
 
-      // Remove past time slots for TODAY
+      // Remove past slots if selected date is today
       if (isToday && slotToMinutes(slot) <= currentMinutes) {
         return false;
       }
 
       return true;
     });
-
-    console.log("Available Slots:", availableSlots);
 
     res.json({
       availableSlots,
@@ -171,7 +155,6 @@ router.get(
   protect,
   authorize("doctor"),
   async (req, res) => {
-
     try {
 
       const avail = await DoctorAvailability.findOne({
@@ -193,7 +176,7 @@ router.get(
 );
 
 // ─────────────────────────────────────────────
-// Block / unblock dates
+// BLOCK / UNBLOCK DATES
 // ─────────────────────────────────────────────
 router.put(
   "/block-dates",
@@ -233,7 +216,7 @@ router.put(
 );
 
 // ─────────────────────────────────────────────
-// Block / unblock specific slots
+// BLOCK / UNBLOCK SLOTS
 // ─────────────────────────────────────────────
 router.put(
   "/block-slots",
@@ -258,7 +241,7 @@ router.put(
         });
       }
 
-      // Remove old blocked slots of that date
+      // Remove old blocked slots
       avail.blockedSlots = avail.blockedSlots.filter(
         (s) => s.date !== date
       );
